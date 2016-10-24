@@ -1,1 +1,1 @@
-web: gunicorn server:app collectstatic --log-file=-
+web: gunicorn server:app --log-file=-
