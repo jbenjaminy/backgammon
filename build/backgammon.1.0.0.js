@@ -50,18 +50,17 @@
 	var ReactDOM = __webpack_require__(34);
 	var Provider = __webpack_require__(172).Provider;
 	
-	var actions = __webpack_require__(201);
-	var store = __webpack_require__(204);
-	var GameContainer = __webpack_require__(207);
+	var actions = __webpack_require__(196);
+	var store = __webpack_require__(199);
+	var Board = __webpack_require__(202);
 	
 	document.addEventListener('DOMContentLoaded', function () {
-	  store.dispatch(actions.pageLoad());
 	  store.dispatch(actions.newGame());
 	
 	  ReactDOM.render(React.createElement(
 	    Provider,
 	    { store: store },
-	    React.createElement(GameContainer, null)
+	    React.createElement(Board, null)
 	  ), document.getElementById('app'));
 	});
 
@@ -1062,14 +1061,6 @@
 	  var source = null;
 	
 	  if (config != null) {
-	    if (process.env.NODE_ENV !== 'production') {
-	      process.env.NODE_ENV !== 'production' ? warning(
-	      /* eslint-disable no-proto */
-	      config.__proto__ == null || config.__proto__ === Object.prototype,
-	      /* eslint-enable no-proto */
-	      'React.createElement(...): Expected props argument to be a plain object. ' + 'Properties defined in its prototype chain will be ignored.') : void 0;
-	    }
-	
 	    if (hasValidRef(config)) {
 	      ref = config.ref;
 	    }
@@ -1170,14 +1161,6 @@
 	  var owner = element._owner;
 	
 	  if (config != null) {
-	    if (process.env.NODE_ENV !== 'production') {
-	      process.env.NODE_ENV !== 'production' ? warning(
-	      /* eslint-disable no-proto */
-	      config.__proto__ == null || config.__proto__ === Object.prototype,
-	      /* eslint-enable no-proto */
-	      'React.cloneElement(...): Expected props argument to be a plain object. ' + 'Properties defined in its prototype chain will be ignored.') : void 0;
-	    }
-	
 	    if (hasValidRef(config)) {
 	      // Silently steal the ref from the parent.
 	      ref = config.ref;
@@ -4211,7 +4194,7 @@
 	
 	'use strict';
 	
-	module.exports = '15.3.1';
+	module.exports = '15.3.2';
 
 /***/ },
 /* 33 */
@@ -5193,8 +5176,10 @@
 	function getFallbackBeforeInputChars(topLevelType, nativeEvent) {
 	  // If we are currently composing (IME) and using a fallback to do so,
 	  // try to extract the composed characters from the fallback object.
+	  // If composition event is available, we extract a string only at
+	  // compositionevent, otherwise extract it at fallback events.
 	  if (currentComposition) {
-	    if (topLevelType === topLevelTypes.topCompositionEnd || isFallbackCompositionEnd(topLevelType, nativeEvent)) {
+	    if (topLevelType === topLevelTypes.topCompositionEnd || !canUseCompositionEvent && isFallbackCompositionEnd(topLevelType, nativeEvent)) {
 	      var chars = currentComposition.getData();
 	      FallbackCompositionState.release(currentComposition);
 	      currentComposition = null;
@@ -6803,7 +6788,8 @@
 	
 	    if (event.preventDefault) {
 	      event.preventDefault();
-	    } else {
+	    } else if (typeof event.returnValue !== 'unknown') {
+	      // eslint-disable-line valid-typeof
 	      event.returnValue = false;
 	    }
 	    this.isDefaultPrevented = emptyFunction.thatReturnsTrue;
@@ -7060,7 +7046,7 @@
 	var doesChangeEventBubble = false;
 	if (ExecutionEnvironment.canUseDOM) {
 	  // See `handleChange` comment below
-	  doesChangeEventBubble = isEventSupported('change') && (!('documentMode' in document) || document.documentMode > 8);
+	  doesChangeEventBubble = isEventSupported('change') && (!document.documentMode || document.documentMode > 8);
 	}
 	
 	function manualDispatchChangeEvent(nativeEvent) {
@@ -7126,7 +7112,7 @@
 	  // deleting text, so we ignore its input events.
 	  // IE10+ fire input events to often, such when a placeholder
 	  // changes or when an input with a placeholder is focused.
-	  isInputEventSupported = isEventSupported('input') && (!('documentMode' in document) || document.documentMode > 11);
+	  isInputEventSupported = isEventSupported('input') && (!document.documentMode || document.documentMode > 11);
 	}
 	
 	/**
@@ -8355,12 +8341,6 @@
 	    endLifeCycleTimer(debugID, timerType);
 	    emitEvent('onEndLifeCycleTimer', debugID, timerType);
 	  },
-	  onError: function (debugID) {
-	    if (currentTimerDebugID != null) {
-	      endLifeCycleTimer(currentTimerDebugID, currentTimerType);
-	    }
-	    emitEvent('onError', debugID);
-	  },
 	  onBeginProcessingChildContext: function () {
 	    emitEvent('onBeginProcessingChildContext');
 	  },
@@ -9434,6 +9414,8 @@
 	    allowFullScreen: HAS_BOOLEAN_VALUE,
 	    allowTransparency: 0,
 	    alt: 0,
+	    // specifies target context for links with `preload` type
+	    as: 0,
 	    async: HAS_BOOLEAN_VALUE,
 	    autoComplete: 0,
 	    // autoFocus is polyfilled/normalized by AutoFocusUtils
@@ -9514,6 +9496,7 @@
 	    optimum: 0,
 	    pattern: 0,
 	    placeholder: 0,
+	    playsInline: HAS_BOOLEAN_VALUE,
 	    poster: 0,
 	    preload: 0,
 	    profile: 0,
@@ -10036,9 +10019,9 @@
 	  if (node.namespaceURI === DOMNamespaces.svg && !('innerHTML' in node)) {
 	    reusableSVGContainer = reusableSVGContainer || document.createElement('div');
 	    reusableSVGContainer.innerHTML = '<svg>' + html + '</svg>';
-	    var newNodes = reusableSVGContainer.firstChild.childNodes;
-	    for (var i = 0; i < newNodes.length; i++) {
-	      node.appendChild(newNodes[i]);
+	    var svgNode = reusableSVGContainer.firstChild;
+	    while (svgNode.firstChild) {
+	      node.appendChild(svgNode.firstChild);
 	    }
 	  } else {
 	    node.innerHTML = html;
@@ -10966,9 +10949,9 @@
 	  ReactDOMOption.postMountWrapper(inst);
 	}
 	
-	var setContentChildForInstrumentation = emptyFunction;
+	var setAndValidateContentChildDev = emptyFunction;
 	if (process.env.NODE_ENV !== 'production') {
-	  setContentChildForInstrumentation = function (content) {
+	  setAndValidateContentChildDev = function (content) {
 	    var hasExistingContent = this._contentDebugID != null;
 	    var debugID = this._debugID;
 	    // This ID represents the inlined child that has no backing instance:
@@ -10982,6 +10965,7 @@
 	      return;
 	    }
 	
+	    validateDOMNesting(null, String(content), this, this._ancestorInfo);
 	    this._contentDebugID = contentDebugID;
 	    if (hasExistingContent) {
 	      ReactInstrumentation.debugTool.onBeforeUpdateComponent(contentDebugID, content);
@@ -11156,7 +11140,7 @@
 	  this._flags = 0;
 	  if (process.env.NODE_ENV !== 'production') {
 	    this._ancestorInfo = null;
-	    setContentChildForInstrumentation.call(this, null);
+	    setAndValidateContentChildDev.call(this, null);
 	  }
 	}
 	
@@ -11256,7 +11240,7 @@
 	      if (parentInfo) {
 	        // parentInfo should always be present except for the top-level
 	        // component when server rendering
-	        validateDOMNesting(this._tag, this, parentInfo);
+	        validateDOMNesting(this._tag, null, this, parentInfo);
 	      }
 	      this._ancestorInfo = validateDOMNesting.updatedAncestorInfo(parentInfo, this._tag, this);
 	    }
@@ -11425,7 +11409,7 @@
 	        // TODO: Validate that text is allowed as a child of this node
 	        ret = escapeTextContentForBrowser(contentToUse);
 	        if (process.env.NODE_ENV !== 'production') {
-	          setContentChildForInstrumentation.call(this, contentToUse);
+	          setAndValidateContentChildDev.call(this, contentToUse);
 	        }
 	      } else if (childrenToUse != null) {
 	        var mountImages = this.mountChildren(childrenToUse, transaction, context);
@@ -11462,7 +11446,7 @@
 	      if (contentToUse != null) {
 	        // TODO: Validate that text is allowed as a child of this node
 	        if (process.env.NODE_ENV !== 'production') {
-	          setContentChildForInstrumentation.call(this, contentToUse);
+	          setAndValidateContentChildDev.call(this, contentToUse);
 	        }
 	        DOMLazyTree.queueText(lazyTree, contentToUse);
 	      } else if (childrenToUse != null) {
@@ -11694,7 +11678,7 @@
 	      if (lastContent !== nextContent) {
 	        this.updateTextContent('' + nextContent);
 	        if (process.env.NODE_ENV !== 'production') {
-	          setContentChildForInstrumentation.call(this, nextContent);
+	          setAndValidateContentChildDev.call(this, nextContent);
 	        }
 	      }
 	    } else if (nextHtml != null) {
@@ -11706,7 +11690,7 @@
 	      }
 	    } else if (nextChildren != null) {
 	      if (process.env.NODE_ENV !== 'production') {
-	        setContentChildForInstrumentation.call(this, null);
+	        setAndValidateContentChildDev.call(this, null);
 	      }
 	
 	      this.updateChildren(nextChildren, transaction, context);
@@ -11761,7 +11745,7 @@
 	    this._wrapperState = null;
 	
 	    if (process.env.NODE_ENV !== 'production') {
-	      setContentChildForInstrumentation.call(this, null);
+	      setAndValidateContentChildDev.call(this, null);
 	    }
 	  },
 	
@@ -13034,6 +13018,19 @@
 	  },
 	
 	  /**
+	   * Protect against document.createEvent() returning null
+	   * Some popup blocker extensions appear to do this:
+	   * https://github.com/facebook/react/issues/6887
+	   */
+	  supportsEventPageXY: function () {
+	    if (!document.createEvent) {
+	      return false;
+	    }
+	    var ev = document.createEvent('MouseEvent');
+	    return ev != null && 'pageX' in ev;
+	  },
+	
+	  /**
 	   * Listens to window scroll and resize events. We cache scroll values so that
 	   * application code can access them without triggering reflows.
 	   *
@@ -13046,7 +13043,7 @@
 	   */
 	  ensureScrollValueMonitoring: function () {
 	    if (hasEventPageXY === undefined) {
-	      hasEventPageXY = document.createEvent && 'pageX' in document.createEvent('MouseEvent');
+	      hasEventPageXY = ReactBrowserEventEmitter.supportsEventPageXY();
 	    }
 	    if (!hasEventPageXY && !isMonitoringScrollValue) {
 	      var refresh = ViewportMetrics.refreshScrollValues;
@@ -13332,7 +13329,7 @@
 	
 	function isControlled(props) {
 	  var usesChecked = props.type === 'checkbox' || props.type === 'radio';
-	  return usesChecked ? props.checked !== undefined : props.value !== undefined;
+	  return usesChecked ? props.checked != null : props.value != null;
 	}
 	
 	/**
@@ -15105,34 +15102,29 @@
 	  }
 	}
 	
-	function invokeComponentDidMountWithTimer() {
-	  var publicInstance = this._instance;
-	  if (this._debugID !== 0) {
-	    ReactInstrumentation.debugTool.onBeginLifeCycleTimer(this._debugID, 'componentDidMount');
-	  }
-	  publicInstance.componentDidMount();
-	  if (this._debugID !== 0) {
-	    ReactInstrumentation.debugTool.onEndLifeCycleTimer(this._debugID, 'componentDidMount');
-	  }
-	}
-	
-	function invokeComponentDidUpdateWithTimer(prevProps, prevState, prevContext) {
-	  var publicInstance = this._instance;
-	  if (this._debugID !== 0) {
-	    ReactInstrumentation.debugTool.onBeginLifeCycleTimer(this._debugID, 'componentDidUpdate');
-	  }
-	  publicInstance.componentDidUpdate(prevProps, prevState, prevContext);
-	  if (this._debugID !== 0) {
-	    ReactInstrumentation.debugTool.onEndLifeCycleTimer(this._debugID, 'componentDidUpdate');
-	  }
-	}
-	
 	function shouldConstruct(Component) {
 	  return !!(Component.prototype && Component.prototype.isReactComponent);
 	}
 	
 	function isPureComponent(Component) {
 	  return !!(Component.prototype && Component.prototype.isPureReactComponent);
+	}
+	
+	// Separated into a function to contain deoptimizations caused by try/finally.
+	function measureLifeCyclePerf(fn, debugID, timerType) {
+	  if (debugID === 0) {
+	    // Top-level wrappers (see ReactMount) and empty components (see
+	    // ReactDOMEmptyComponent) are invisible to hooks and devtools.
+	    // Both are implementation details that should go away in the future.
+	    return fn();
+	  }
+	
+	  ReactInstrumentation.debugTool.onBeginLifeCycleTimer(debugID, timerType);
+	  try {
+	    return fn();
+	  } finally {
+	    ReactInstrumentation.debugTool.onEndLifeCycleTimer(debugID, timerType);
+	  }
 	}
 	
 	/**
@@ -15226,6 +15218,8 @@
 	   * @internal
 	   */
 	  mountComponent: function (transaction, hostParent, hostContainerInfo, context) {
+	    var _this = this;
+	
 	    this._context = context;
 	    this._mountOrder = nextMountID++;
 	    this._hostParent = hostParent;
@@ -15315,7 +15309,11 @@
 	
 	    if (inst.componentDidMount) {
 	      if (process.env.NODE_ENV !== 'production') {
-	        transaction.getReactMountReady().enqueue(invokeComponentDidMountWithTimer, this);
+	        transaction.getReactMountReady().enqueue(function () {
+	          measureLifeCyclePerf(function () {
+	            return inst.componentDidMount();
+	          }, _this._debugID, 'componentDidMount');
+	        });
 	      } else {
 	        transaction.getReactMountReady().enqueue(inst.componentDidMount, inst);
 	      }
@@ -15339,35 +15337,26 @@
 	
 	  _constructComponentWithoutOwner: function (doConstruct, publicProps, publicContext, updateQueue) {
 	    var Component = this._currentElement.type;
-	    var instanceOrElement;
+	
 	    if (doConstruct) {
 	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onBeginLifeCycleTimer(this._debugID, 'ctor');
-	        }
-	      }
-	      instanceOrElement = new Component(publicProps, publicContext, updateQueue);
-	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onEndLifeCycleTimer(this._debugID, 'ctor');
-	        }
-	      }
-	    } else {
-	      // This can still be an instance in case of factory components
-	      // but we'll count this as time spent rendering as the more common case.
-	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onBeginLifeCycleTimer(this._debugID, 'render');
-	        }
-	      }
-	      instanceOrElement = Component(publicProps, publicContext, updateQueue);
-	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onEndLifeCycleTimer(this._debugID, 'render');
-	        }
+	        return measureLifeCyclePerf(function () {
+	          return new Component(publicProps, publicContext, updateQueue);
+	        }, this._debugID, 'ctor');
+	      } else {
+	        return new Component(publicProps, publicContext, updateQueue);
 	      }
 	    }
-	    return instanceOrElement;
+	
+	    // This can still be an instance in case of factory components
+	    // but we'll count this as time spent rendering as the more common case.
+	    if (process.env.NODE_ENV !== 'production') {
+	      return measureLifeCyclePerf(function () {
+	        return Component(publicProps, publicContext, updateQueue);
+	      }, this._debugID, 'render');
+	    } else {
+	      return Component(publicProps, publicContext, updateQueue);
+	    }
 	  },
 	
 	  performInitialMountWithErrorHandling: function (renderedElement, hostParent, hostContainerInfo, transaction, context) {
@@ -15376,11 +15365,6 @@
 	    try {
 	      markup = this.performInitialMount(renderedElement, hostParent, hostContainerInfo, transaction, context);
 	    } catch (e) {
-	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onError();
-	        }
-	      }
 	      // Roll back to checkpoint, handle error (which may add items to the transaction), and take a new checkpoint
 	      transaction.rollback(checkpoint);
 	      this._instance.unstable_handleError(e);
@@ -15401,17 +15385,19 @@
 	
 	  performInitialMount: function (renderedElement, hostParent, hostContainerInfo, transaction, context) {
 	    var inst = this._instance;
+	
+	    var debugID = 0;
+	    if (process.env.NODE_ENV !== 'production') {
+	      debugID = this._debugID;
+	    }
+	
 	    if (inst.componentWillMount) {
 	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onBeginLifeCycleTimer(this._debugID, 'componentWillMount');
-	        }
-	      }
-	      inst.componentWillMount();
-	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onEndLifeCycleTimer(this._debugID, 'componentWillMount');
-	        }
+	        measureLifeCyclePerf(function () {
+	          return inst.componentWillMount();
+	        }, debugID, 'componentWillMount');
+	      } else {
+	        inst.componentWillMount();
 	      }
 	      // When mounting, calls to `setState` by `componentWillMount` will set
 	      // `this._pendingStateQueue` without triggering a re-render.
@@ -15431,15 +15417,12 @@
 	    );
 	    this._renderedComponent = child;
 	
-	    var selfDebugID = 0;
-	    if (process.env.NODE_ENV !== 'production') {
-	      selfDebugID = this._debugID;
-	    }
-	    var markup = ReactReconciler.mountComponent(child, transaction, hostParent, hostContainerInfo, this._processChildContext(context), selfDebugID);
+	    var markup = ReactReconciler.mountComponent(child, transaction, hostParent, hostContainerInfo, this._processChildContext(context), debugID);
 	
 	    if (process.env.NODE_ENV !== 'production') {
-	      if (this._debugID !== 0) {
-	        ReactInstrumentation.debugTool.onSetChildren(this._debugID, child._debugID !== 0 ? [child._debugID] : []);
+	      if (debugID !== 0) {
+	        var childDebugIDs = child._debugID !== 0 ? [child._debugID] : [];
+	        ReactInstrumentation.debugTool.onSetChildren(debugID, childDebugIDs);
 	      }
 	    }
 	
@@ -15460,24 +15443,22 @@
 	    if (!this._renderedComponent) {
 	      return;
 	    }
+	
 	    var inst = this._instance;
 	
 	    if (inst.componentWillUnmount && !inst._calledComponentWillUnmount) {
 	      inst._calledComponentWillUnmount = true;
-	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onBeginLifeCycleTimer(this._debugID, 'componentWillUnmount');
-	        }
-	      }
+	
 	      if (safely) {
 	        var name = this.getName() + '.componentWillUnmount()';
 	        ReactErrorUtils.invokeGuardedCallback(name, inst.componentWillUnmount.bind(inst));
 	      } else {
-	        inst.componentWillUnmount();
-	      }
-	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onEndLifeCycleTimer(this._debugID, 'componentWillUnmount');
+	        if (process.env.NODE_ENV !== 'production') {
+	          measureLifeCyclePerf(function () {
+	            return inst.componentWillUnmount();
+	          }, this._debugID, 'componentWillUnmount');
+	        } else {
+	          inst.componentWillUnmount();
 	        }
 	      }
 	    }
@@ -15564,13 +15545,21 @@
 	  _processChildContext: function (currentContext) {
 	    var Component = this._currentElement.type;
 	    var inst = this._instance;
-	    if (process.env.NODE_ENV !== 'production') {
-	      ReactInstrumentation.debugTool.onBeginProcessingChildContext();
+	    var childContext;
+	
+	    if (inst.getChildContext) {
+	      if (process.env.NODE_ENV !== 'production') {
+	        ReactInstrumentation.debugTool.onBeginProcessingChildContext();
+	        try {
+	          childContext = inst.getChildContext();
+	        } finally {
+	          ReactInstrumentation.debugTool.onEndProcessingChildContext();
+	        }
+	      } else {
+	        childContext = inst.getChildContext();
+	      }
 	    }
-	    var childContext = inst.getChildContext && inst.getChildContext();
-	    if (process.env.NODE_ENV !== 'production') {
-	      ReactInstrumentation.debugTool.onEndProcessingChildContext();
-	    }
+	
 	    if (childContext) {
 	      !(typeof Component.childContextTypes === 'object') ? process.env.NODE_ENV !== 'production' ? invariant(false, '%s.getChildContext(): childContextTypes must be defined in order to use getChildContext().', this.getName() || 'ReactCompositeComponent') : _prodInvariant('107', this.getName() || 'ReactCompositeComponent') : void 0;
 	      if (process.env.NODE_ENV !== 'production') {
@@ -15665,15 +15654,11 @@
 	    // immediately reconciled instead of waiting for the next batch.
 	    if (willReceive && inst.componentWillReceiveProps) {
 	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onBeginLifeCycleTimer(this._debugID, 'componentWillReceiveProps');
-	        }
-	      }
-	      inst.componentWillReceiveProps(nextProps, nextContext);
-	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onEndLifeCycleTimer(this._debugID, 'componentWillReceiveProps');
-	        }
+	        measureLifeCyclePerf(function () {
+	          return inst.componentWillReceiveProps(nextProps, nextContext);
+	        }, this._debugID, 'componentWillReceiveProps');
+	      } else {
+	        inst.componentWillReceiveProps(nextProps, nextContext);
 	      }
 	    }
 	
@@ -15683,15 +15668,11 @@
 	    if (!this._pendingForceUpdate) {
 	      if (inst.shouldComponentUpdate) {
 	        if (process.env.NODE_ENV !== 'production') {
-	          if (this._debugID !== 0) {
-	            ReactInstrumentation.debugTool.onBeginLifeCycleTimer(this._debugID, 'shouldComponentUpdate');
-	          }
-	        }
-	        shouldUpdate = inst.shouldComponentUpdate(nextProps, nextState, nextContext);
-	        if (process.env.NODE_ENV !== 'production') {
-	          if (this._debugID !== 0) {
-	            ReactInstrumentation.debugTool.onEndLifeCycleTimer(this._debugID, 'shouldComponentUpdate');
-	          }
+	          shouldUpdate = measureLifeCyclePerf(function () {
+	            return inst.shouldComponentUpdate(nextProps, nextState, nextContext);
+	          }, this._debugID, 'shouldComponentUpdate');
+	        } else {
+	          shouldUpdate = inst.shouldComponentUpdate(nextProps, nextState, nextContext);
 	        }
 	      } else {
 	        if (this._compositeType === CompositeTypes.PureClass) {
@@ -15757,6 +15738,8 @@
 	   * @private
 	   */
 	  _performComponentUpdate: function (nextElement, nextProps, nextState, nextContext, transaction, unmaskedContext) {
+	    var _this2 = this;
+	
 	    var inst = this._instance;
 	
 	    var hasComponentDidUpdate = Boolean(inst.componentDidUpdate);
@@ -15771,15 +15754,11 @@
 	
 	    if (inst.componentWillUpdate) {
 	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onBeginLifeCycleTimer(this._debugID, 'componentWillUpdate');
-	        }
-	      }
-	      inst.componentWillUpdate(nextProps, nextState, nextContext);
-	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onEndLifeCycleTimer(this._debugID, 'componentWillUpdate');
-	        }
+	        measureLifeCyclePerf(function () {
+	          return inst.componentWillUpdate(nextProps, nextState, nextContext);
+	        }, this._debugID, 'componentWillUpdate');
+	      } else {
+	        inst.componentWillUpdate(nextProps, nextState, nextContext);
 	      }
 	    }
 	
@@ -15793,7 +15772,9 @@
 	
 	    if (hasComponentDidUpdate) {
 	      if (process.env.NODE_ENV !== 'production') {
-	        transaction.getReactMountReady().enqueue(invokeComponentDidUpdateWithTimer.bind(this, prevProps, prevState, prevContext), this);
+	        transaction.getReactMountReady().enqueue(function () {
+	          measureLifeCyclePerf(inst.componentDidUpdate.bind(inst, prevProps, prevState, prevContext), _this2._debugID, 'componentDidUpdate');
+	        });
 	      } else {
 	        transaction.getReactMountReady().enqueue(inst.componentDidUpdate.bind(inst, prevProps, prevState, prevContext), inst);
 	      }
@@ -15810,6 +15791,12 @@
 	    var prevComponentInstance = this._renderedComponent;
 	    var prevRenderedElement = prevComponentInstance._currentElement;
 	    var nextRenderedElement = this._renderValidatedComponent();
+	
+	    var debugID = 0;
+	    if (process.env.NODE_ENV !== 'production') {
+	      debugID = this._debugID;
+	    }
+	
 	    if (shouldUpdateReactComponent(prevRenderedElement, nextRenderedElement)) {
 	      ReactReconciler.receiveComponent(prevComponentInstance, nextRenderedElement, transaction, this._processChildContext(context));
 	    } else {
@@ -15822,15 +15809,12 @@
 	      );
 	      this._renderedComponent = child;
 	
-	      var selfDebugID = 0;
-	      if (process.env.NODE_ENV !== 'production') {
-	        selfDebugID = this._debugID;
-	      }
-	      var nextMarkup = ReactReconciler.mountComponent(child, transaction, this._hostParent, this._hostContainerInfo, this._processChildContext(context), selfDebugID);
+	      var nextMarkup = ReactReconciler.mountComponent(child, transaction, this._hostParent, this._hostContainerInfo, this._processChildContext(context), debugID);
 	
 	      if (process.env.NODE_ENV !== 'production') {
-	        if (this._debugID !== 0) {
-	          ReactInstrumentation.debugTool.onSetChildren(this._debugID, child._debugID !== 0 ? [child._debugID] : []);
+	        if (debugID !== 0) {
+	          var childDebugIDs = child._debugID !== 0 ? [child._debugID] : [];
+	          ReactInstrumentation.debugTool.onSetChildren(debugID, childDebugIDs);
 	        }
 	      }
 	
@@ -15852,17 +15836,14 @@
 	   */
 	  _renderValidatedComponentWithoutOwnerOrContext: function () {
 	    var inst = this._instance;
+	    var renderedComponent;
 	
 	    if (process.env.NODE_ENV !== 'production') {
-	      if (this._debugID !== 0) {
-	        ReactInstrumentation.debugTool.onBeginLifeCycleTimer(this._debugID, 'render');
-	      }
-	    }
-	    var renderedComponent = inst.render();
-	    if (process.env.NODE_ENV !== 'production') {
-	      if (this._debugID !== 0) {
-	        ReactInstrumentation.debugTool.onEndLifeCycleTimer(this._debugID, 'render');
-	      }
+	      renderedComponent = measureLifeCyclePerf(function () {
+	        return inst.render();
+	      }, this._debugID, 'render');
+	    } else {
+	      renderedComponent = inst.render();
 	    }
 	
 	    if (process.env.NODE_ENV !== 'production') {
@@ -15913,7 +15894,7 @@
 	    var publicComponentInstance = component.getPublicInstance();
 	    if (process.env.NODE_ENV !== 'production') {
 	      var componentName = component && component.getName ? component.getName() : 'a component';
-	      process.env.NODE_ENV !== 'production' ? warning(publicComponentInstance != null, 'Stateless function components cannot be given refs ' + '(See ref "%s" in %s created by %s). ' + 'Attempts to access this ref will fail.', ref, componentName, this.getName()) : void 0;
+	      process.env.NODE_ENV !== 'production' ? warning(publicComponentInstance != null || component._compositeType !== CompositeTypes.StatelessFunctional, 'Stateless function components cannot be given refs ' + '(See ref "%s" in %s created by %s). ' + 'Attempts to access this ref will fail.', ref, componentName, this.getName()) : void 0;
 	    }
 	    var refs = inst.refs === emptyObject ? inst.refs = {} : inst.refs;
 	    refs[ref] = publicComponentInstance;
@@ -16050,7 +16031,8 @@
 	  if (x === y) {
 	    // Steps 1-5, 7-10
 	    // Steps 6.b-6.e: +0 != -0
-	    return x !== 0 || 1 / x === 1 / y;
+	    // Added the nonzero y check to make Flow happy, but it is redundant
+	    return x !== 0 || y !== 0 || 1 / x === 1 / y;
 	  } else {
 	    // Step 6.a: NaN == NaN
 	    return x !== x && y !== y;
@@ -17104,10 +17086,15 @@
 	
 	  var didWarn = {};
 	
-	  validateDOMNesting = function (childTag, childInstance, ancestorInfo) {
+	  validateDOMNesting = function (childTag, childText, childInstance, ancestorInfo) {
 	    ancestorInfo = ancestorInfo || emptyAncestorInfo;
 	    var parentInfo = ancestorInfo.current;
 	    var parentTag = parentInfo && parentInfo.tag;
+	
+	    if (childText != null) {
+	      process.env.NODE_ENV !== 'production' ? warning(childTag == null, 'validateDOMNesting: when childText is passed, childTag should be null') : void 0;
+	      childTag = '#text';
+	    }
 	
 	    var invalidParent = isTagValidWithParent(childTag, parentTag) ? null : parentInfo;
 	    var invalidAncestor = invalidParent ? null : findInvalidAncestorForTag(childTag, ancestorInfo);
@@ -17156,7 +17143,15 @@
 	      didWarn[warnKey] = true;
 	
 	      var tagDisplayName = childTag;
-	      if (childTag !== '#text') {
+	      var whitespaceInfo = '';
+	      if (childTag === '#text') {
+	        if (/\S/.test(childText)) {
+	          tagDisplayName = 'Text nodes';
+	        } else {
+	          tagDisplayName = 'Whitespace text nodes';
+	          whitespaceInfo = ' Make sure you don\'t have any extra whitespace between tags on ' + 'each line of your source code.';
+	        }
+	      } else {
 	        tagDisplayName = '<' + childTag + '>';
 	      }
 	
@@ -17165,7 +17160,7 @@
 	        if (ancestorTag === 'table' && childTag === 'tr') {
 	          info += ' Add a <tbody> to your code to match the DOM tree generated by ' + 'the browser.';
 	        }
-	        process.env.NODE_ENV !== 'production' ? warning(false, 'validateDOMNesting(...): %s cannot appear as a child of <%s>. ' + 'See %s.%s', tagDisplayName, ancestorTag, ownerInfo, info) : void 0;
+	        process.env.NODE_ENV !== 'production' ? warning(false, 'validateDOMNesting(...): %s cannot appear as a child of <%s>.%s ' + 'See %s.%s', tagDisplayName, ancestorTag, whitespaceInfo, ownerInfo, info) : void 0;
 	      } else {
 	        process.env.NODE_ENV !== 'production' ? warning(false, 'validateDOMNesting(...): %s cannot appear as a descendant of ' + '<%s>. See %s.', tagDisplayName, ancestorTag, ownerInfo) : void 0;
 	      }
@@ -17472,7 +17467,7 @@
 	      if (parentInfo) {
 	        // parentInfo should always be present except for the top-level
 	        // component when server rendering
-	        validateDOMNesting('#text', this, parentInfo);
+	        validateDOMNesting(null, this._stringText, this, parentInfo);
 	      }
 	    }
 	
@@ -19065,7 +19060,7 @@
 	      bubbled: keyOf({ onSelect: null }),
 	      captured: keyOf({ onSelectCapture: null })
 	    },
-	    dependencies: [topLevelTypes.topBlur, topLevelTypes.topContextMenu, topLevelTypes.topFocus, topLevelTypes.topKeyDown, topLevelTypes.topMouseDown, topLevelTypes.topMouseUp, topLevelTypes.topSelectionChange]
+	    dependencies: [topLevelTypes.topBlur, topLevelTypes.topContextMenu, topLevelTypes.topFocus, topLevelTypes.topKeyDown, topLevelTypes.topKeyUp, topLevelTypes.topMouseDown, topLevelTypes.topMouseUp, topLevelTypes.topSelectionChange]
 	  }
 	};
 	
@@ -21616,15 +21611,15 @@
 	
 	var _warning2 = _interopRequireDefault(_warning);
 	
-	var _isPlainObject = __webpack_require__(194);
+	var _isPlainObject = __webpack_require__(181);
 	
 	var _isPlainObject2 = _interopRequireDefault(_isPlainObject);
 	
-	var _hoistNonReactStatics = __webpack_require__(199);
+	var _hoistNonReactStatics = __webpack_require__(194);
 	
 	var _hoistNonReactStatics2 = _interopRequireDefault(_hoistNonReactStatics);
 	
-	var _invariant = __webpack_require__(200);
+	var _invariant = __webpack_require__(195);
 	
 	var _invariant2 = _interopRequireDefault(_invariant);
 	
@@ -22100,7 +22095,7 @@
 	
 	var _isPlainObject2 = _interopRequireDefault(_isPlainObject);
 	
-	var _symbolObservable = __webpack_require__(186);
+	var _symbolObservable = __webpack_require__(185);
 	
 	var _symbolObservable2 = _interopRequireDefault(_symbolObservable);
 	
@@ -22357,8 +22352,7 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	var getPrototype = __webpack_require__(182),
-	    isHostObject = __webpack_require__(184),
-	    isObjectLike = __webpack_require__(185);
+	    isObjectLike = __webpack_require__(184);
 	
 	/** `Object#toString` result references. */
 	var objectTag = '[object Object]';
@@ -22412,8 +22406,7 @@
 	 * // => true
 	 */
 	function isPlainObject(value) {
-	  if (!isObjectLike(value) ||
-	      objectToString.call(value) != objectTag || isHostObject(value)) {
+	  if (!isObjectLike(value) || objectToString.call(value) != objectTag) {
 	    return false;
 	  }
 	  var proto = getPrototype(value);
@@ -22466,32 +22459,6 @@
 /***/ function(module, exports) {
 
 	/**
-	 * Checks if `value` is a host object in IE < 9.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a host object, else `false`.
-	 */
-	function isHostObject(value) {
-	  // Many host objects are `Object` objects that can coerce to strings
-	  // despite having improperly defined `toString` methods.
-	  var result = false;
-	  if (value != null && typeof value.toString != 'function') {
-	    try {
-	      result = !!(value + '');
-	    } catch (e) {}
-	  }
-	  return result;
-	}
-	
-	module.exports = isHostObject;
-
-
-/***/ },
-/* 185 */
-/***/ function(module, exports) {
-
-	/**
 	 * Checks if `value` is object-like. A value is object-like if it's not `null`
 	 * and has a `typeof` result of "object".
 	 *
@@ -22516,27 +22483,27 @@
 	 * // => false
 	 */
 	function isObjectLike(value) {
-	  return !!value && typeof value == 'object';
+	  return value != null && typeof value == 'object';
 	}
 	
 	module.exports = isObjectLike;
 
 
 /***/ },
-/* 186 */
+/* 185 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(187);
+	module.exports = __webpack_require__(186);
 
 
 /***/ },
-/* 187 */
+/* 186 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(global) {'use strict';
+	/* WEBPACK VAR INJECTION */(function(global, module) {'use strict';
 	
 	Object.defineProperty(exports, "__esModule", {
-		value: true
+	  value: true
 	});
 	
 	var _ponyfill = __webpack_require__(188);
@@ -22545,17 +22512,40 @@
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 	
-	var root = undefined; /* global window */
+	var root; /* global window */
 	
-	if (typeof global !== 'undefined') {
-		root = global;
+	
+	if (typeof self !== 'undefined') {
+	  root = self;
 	} else if (typeof window !== 'undefined') {
-		root = window;
+	  root = window;
+	} else if (typeof global !== 'undefined') {
+	  root = global;
+	} else if (true) {
+	  root = module;
+	} else {
+	  root = Function('return this')();
 	}
 	
 	var result = (0, _ponyfill2['default'])(root);
 	exports['default'] = result;
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(187)(module)))
+
+/***/ },
+/* 187 */
+/***/ function(module, exports) {
+
+	module.exports = function(module) {
+		if(!module.webpackPolyfill) {
+			module.deprecate = function() {};
+			module.paths = [];
+			// module.parent = undefined by default
+			module.children = [];
+			module.webpackPolyfill = 1;
+		}
+		return module;
+	}
+
 
 /***/ },
 /* 188 */
@@ -22927,176 +22917,6 @@
 
 /***/ },
 /* 194 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var getPrototype = __webpack_require__(195),
-	    isHostObject = __webpack_require__(197),
-	    isObjectLike = __webpack_require__(198);
-	
-	/** `Object#toString` result references. */
-	var objectTag = '[object Object]';
-	
-	/** Used for built-in method references. */
-	var funcProto = Function.prototype,
-	    objectProto = Object.prototype;
-	
-	/** Used to resolve the decompiled source of functions. */
-	var funcToString = funcProto.toString;
-	
-	/** Used to check objects for own properties. */
-	var hasOwnProperty = objectProto.hasOwnProperty;
-	
-	/** Used to infer the `Object` constructor. */
-	var objectCtorString = funcToString.call(Object);
-	
-	/**
-	 * Used to resolve the
-	 * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
-	 * of values.
-	 */
-	var objectToString = objectProto.toString;
-	
-	/**
-	 * Checks if `value` is a plain object, that is, an object created by the
-	 * `Object` constructor or one with a `[[Prototype]]` of `null`.
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 0.8.0
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a plain object, else `false`.
-	 * @example
-	 *
-	 * function Foo() {
-	 *   this.a = 1;
-	 * }
-	 *
-	 * _.isPlainObject(new Foo);
-	 * // => false
-	 *
-	 * _.isPlainObject([1, 2, 3]);
-	 * // => false
-	 *
-	 * _.isPlainObject({ 'x': 0, 'y': 0 });
-	 * // => true
-	 *
-	 * _.isPlainObject(Object.create(null));
-	 * // => true
-	 */
-	function isPlainObject(value) {
-	  if (!isObjectLike(value) ||
-	      objectToString.call(value) != objectTag || isHostObject(value)) {
-	    return false;
-	  }
-	  var proto = getPrototype(value);
-	  if (proto === null) {
-	    return true;
-	  }
-	  var Ctor = hasOwnProperty.call(proto, 'constructor') && proto.constructor;
-	  return (typeof Ctor == 'function' &&
-	    Ctor instanceof Ctor && funcToString.call(Ctor) == objectCtorString);
-	}
-	
-	module.exports = isPlainObject;
-
-
-/***/ },
-/* 195 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var overArg = __webpack_require__(196);
-	
-	/** Built-in value references. */
-	var getPrototype = overArg(Object.getPrototypeOf, Object);
-	
-	module.exports = getPrototype;
-
-
-/***/ },
-/* 196 */
-/***/ function(module, exports) {
-
-	/**
-	 * Creates a unary function that invokes `func` with its argument transformed.
-	 *
-	 * @private
-	 * @param {Function} func The function to wrap.
-	 * @param {Function} transform The argument transform.
-	 * @returns {Function} Returns the new function.
-	 */
-	function overArg(func, transform) {
-	  return function(arg) {
-	    return func(transform(arg));
-	  };
-	}
-	
-	module.exports = overArg;
-
-
-/***/ },
-/* 197 */
-/***/ function(module, exports) {
-
-	/**
-	 * Checks if `value` is a host object in IE < 9.
-	 *
-	 * @private
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is a host object, else `false`.
-	 */
-	function isHostObject(value) {
-	  // Many host objects are `Object` objects that can coerce to strings
-	  // despite having improperly defined `toString` methods.
-	  var result = false;
-	  if (value != null && typeof value.toString != 'function') {
-	    try {
-	      result = !!(value + '');
-	    } catch (e) {}
-	  }
-	  return result;
-	}
-	
-	module.exports = isHostObject;
-
-
-/***/ },
-/* 198 */
-/***/ function(module, exports) {
-
-	/**
-	 * Checks if `value` is object-like. A value is object-like if it's not `null`
-	 * and has a `typeof` result of "object".
-	 *
-	 * @static
-	 * @memberOf _
-	 * @since 4.0.0
-	 * @category Lang
-	 * @param {*} value The value to check.
-	 * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
-	 * @example
-	 *
-	 * _.isObjectLike({});
-	 * // => true
-	 *
-	 * _.isObjectLike([1, 2, 3]);
-	 * // => true
-	 *
-	 * _.isObjectLike(_.noop);
-	 * // => false
-	 *
-	 * _.isObjectLike(null);
-	 * // => false
-	 */
-	function isObjectLike(value) {
-	  return !!value && typeof value == 'object';
-	}
-	
-	module.exports = isObjectLike;
-
-
-/***/ },
-/* 199 */
 /***/ function(module, exports) {
 
 	/**
@@ -23152,7 +22972,7 @@
 
 
 /***/ },
-/* 200 */
+/* 195 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {/**
@@ -23210,288 +23030,38 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
 
 /***/ },
-/* 201 */
+/* 196 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var fetch = __webpack_require__(202);
+	var fetch = __webpack_require__(197);
 	
-	var PAGE_LOAD = 'PAGE_LOAD';
-	var pageLoad = function pageLoad() {
-	    return {
-	        type: PAGE_LOAD
-	    };
-	};
-	
-	var ROLL_DICE = 'ROLL_DICE';
-	var rollDice = function rollDice() {
-	    return {
-	        type: ROLL_DICE
-	    };
-	};
-	
-	var SELECT = 'SELECT';
-	var select = function select(id) {
-	    return {
-	        type: SELECT,
-	        id: id
-	    };
-	};
-	
-	var UNHIGHLIGHT = 'UNHIGHLIGHT';
-	var unhighlight = function unhighlight() {
-	    return {
-	        type: UNHIGHLIGHT
-	    };
-	};
-	
-	var END_TURN = 'END_TURN';
-	var endTurn = function endTurn() {
-	    return {
-	        type: END_TURN
-	    };
-	};
-	
-	var END_GAME = 'END_GAME';
-	var endGame = function endGame(winner) {
-	    return {
-	        type: END_GAME,
-	        winner: winner
-	    };
-	};
-	
+	var NEW_GAME = 'NEW_GAME';
 	var newGame = function newGame() {
-	    return function (dispatch) {
-	        var url = '/new_game';
-	        var request = {
-	            headers: {
-	                'Accept': 'application/json',
-	                'Content-Type': 'application/json'
-	            }
-	        };
-	        return fetch(url, request).then(function (response) {
-	            if (response.status < 200 || response.status >= 300) {
-	                var error = new Error(response.statusText);
-	                error.response = response;
-	                throw error;
-	            }
-	            return response;
-	        }).then(function (response) {
-	            return response.json();
-	        }).then(function (positions) {
-	            return dispatch(newGameSuccess(positions));
-	        }).catch(function (error) {
-	            return dispatch(newGameError(error));
-	        });
-	    };
-	};
-	
-	var NEW_GAME_SUCCESS = 'NEW_GAME_SUCCESS';
-	var newGameSuccess = function newGameSuccess(positions) {
-	    return {
-	        type: NEW_GAME_SUCCESS,
-	        positions: positions
-	    };
-	};
-	
-	var NEW_GAME_ERROR = 'NEW_GAME_ERROR';
-	var newGameError = function newGameError(error) {
-	    return {
-	        type: NEW_GAME_ERROR,
-	        error: error
-	    };
-	};
-	
-	var makeRoll = function makeRoll(numDice) {
-	    return function (dispatch) {
-	        var url = '/roll/' + numDice;
-	        var request = {
-	            headers: {
-	                'Accept': 'application/json',
-	                'Content-Type': 'application/json'
-	            }
-	        };
-	        return fetch(url, request).then(function (response) {
-	            if (response.status < 200 || response.status >= 300) {
-	                var error = new Error(response.statusText);
-	                error.response = response;
-	                throw error;
-	            }
-	            return response;
-	        }).then(function (response) {
-	            return response.json();
-	        }).then(function (roll) {
-	            return dispatch(makeRollSuccess(roll));
-	        }).catch(function (error) {
-	            return dispatch(makeRollError(error));
-	        });
-	    };
-	};
-	
-	var MAKE_ROLL_SUCCESS = 'MAKE_ROLL_SUCCESS';
-	var makeRollSuccess = function makeRollSuccess(roll) {
-	    return {
-	        type: MAKE_ROLL_SUCCESS,
-	        roll: roll
-	    };
-	};
-	
-	var MAKE_ROLL_ERROR = 'MAKE_ROLL_ERROR';
-	var makeRollError = function makeRollError(error) {
-	    return {
-	        type: MAKE_ROLL_ERROR,
-	        error: error
-	    };
-	};
-	
-	var findValidMoves = function findValidMoves(player, fromPos, availMoves) {
-	    return function (dispatch) {
-	        var url = '/valid_moves/' + player + '/' + fromPos + '/' + availMoves;
-	        var request = {
-	            headers: {
-	                'Accept': 'application/json',
-	                'Content-Type': 'application/json'
-	            }
-	        };
-	        return fetch(url, request).then(function (response) {
-	            if (response.status < 200 || response.status >= 300) {
-	                var error = new Error(response.statusText);
-	                error.response = response;
-	                throw error;
-	            }
-	            return response;
-	        }).then(function (response) {
-	            return response.json();
-	        }).then(function (data) {
-	            var validMoves = data[0];
-	            var id = data[1];
-	            return dispatch(findValidMovesSuccess(validMoves, id));
-	        }).catch(function (error) {
-	            return dispatch(findValidMovesError(error));
-	        });
-	    };
-	};
-	
-	var FIND_VALID_MOVES_SUCCESS = 'FIND_VALID_MOVES_SUCCESS';
-	var findValidMovesSuccess = function findValidMovesSuccess(validMoves, id) {
-	    return {
-	        type: FIND_VALID_MOVES_SUCCESS,
-	        validMoves: validMoves,
-	        id: id
-	    };
-	};
-	
-	var FIND_VALID_MOVES_ERROR = 'FIND_VALID_MOVES_ERROR';
-	var findValidMovesError = function findValidMovesError(error) {
-	    return {
-	        type: FIND_VALID_MOVES_ERROR,
-	        error: error
-	    };
-	};
-	
-	var updatePositions = function updatePositions(toPos, fromPos, roll) {
-	    return function (dispatch) {
-	        var url = '/update_pos/' + toPos + '/' + fromPos + '/' + roll;
-	        var request = {
-	            headers: {
-	                'Accept': 'application/json',
-	                'Content-Type': 'application/json'
-	            }
-	        };
-	        return fetch(url, request).then(function (response) {
-	            if (response.status < 200 || response.status >= 300) {
-	                var error = new Error(response.statusText);
-	                error.response = response;
-	                throw error;
-	            }
-	            return response;
-	        }).then(function (response) {
-	            return response.json();
-	        }).then(function (data) {
-	            var positions = data[0];
-	            var roll = data[1];
-	            return dispatch(updatePositionsSuccess(positions, roll));
-	        }).catch(function (error) {
-	            return dispatch(updatePositionsError(error));
-	        });
-	    };
-	};
-	
-	var UPDATE_POSITIONS_SUCCESS = 'UPDATE_POSITIONS_SUCCESS';
-	var updatePositionsSuccess = function updatePositionsSuccess(positions, roll) {
-	    return {
-	        type: UPDATE_POSITIONS_SUCCESS,
-	        positions: positions,
-	        roll: roll
-	    };
-	};
-	
-	var UPDATE_POSITIONS_ERROR = 'UPDATE_POSITIONS_ERROR';
-	var updatePositionsError = function updatePositionsError(error) {
-	    return {
-	        type: UPDATE_POSITIONS_ERROR,
-	        error: error
-	    };
+	  return {
+	    type: NEW_GAME
+	  };
 	};
 	
 	/*----------- EXPORTS ----------*/
-	exports.PAGE_LOAD = PAGE_LOAD;
-	exports.pageLoad = pageLoad;
-	
-	exports.ROLL_DICE = ROLL_DICE;
-	exports.rollDice = rollDice;
-	
-	exports.SELECT = SELECT;
-	exports.select = select;
-	
-	exports.UNHIGHLIGHT = UNHIGHLIGHT;
-	exports.unhighlight = unhighlight;
-	
-	exports.END_TURN = END_TURN;
-	exports.endTurn = endTurn;
-	
-	exports.END_GAME = END_GAME;
-	exports.endGame = endGame;
-	
+	exports.NEW_GAME = NEW_GAME;
 	exports.newGame = newGame;
-	exports.NEW_GAME_SUCCESS = NEW_GAME_SUCCESS;
-	exports.newGameSuccess = newGameSuccess;
-	exports.NEW_GAME_ERROR = NEW_GAME_ERROR;
-	exports.newGameError = newGameError;
-	
-	exports.makeRoll = makeRoll;
-	exports.MAKE_ROLL_SUCCESS = MAKE_ROLL_SUCCESS;
-	exports.makeRollSuccess = makeRollSuccess;
-	exports.MAKE_ROLL_ERROR = MAKE_ROLL_ERROR;
-	exports.makeRollError = makeRollError;
-	
-	exports.findValidMoves = findValidMoves;
-	exports.FIND_VALID_MOVES_SUCCESS = FIND_VALID_MOVES_SUCCESS;
-	exports.findValidMovesSuccess = findValidMovesSuccess;
-	exports.FIND_VALID_MOVES_ERROR = FIND_VALID_MOVES_ERROR;
-	exports.findValidMovesError = findValidMovesError;
-	
-	exports.updatePositions = updatePositions;
-	exports.UPDATE_POSITIONS_SUCCESS = UPDATE_POSITIONS_SUCCESS;
-	exports.updatePositionsSuccess = updatePositionsSuccess;
-	exports.UPDATE_POSITIONS_ERROR = UPDATE_POSITIONS_ERROR;
-	exports.updatePositionsError = updatePositionsError;
 
 /***/ },
-/* 202 */
+/* 197 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// the whatwg-fetch polyfill installs the fetch() function
 	// on the global object (window or self)
 	//
 	// Return that as the export for use in Webpack, Browserify etc.
-	__webpack_require__(203);
+	__webpack_require__(198);
 	module.exports = self.fetch.bind(self);
 
 
 /***/ },
-/* 203 */
+/* 198 */
 /***/ function(module, exports) {
 
 	(function(self) {
@@ -23930,16 +23500,16 @@
 
 
 /***/ },
-/* 204 */
+/* 199 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var _redux = __webpack_require__(179);
 	
-	var reducers = __webpack_require__(205);
-	var actions = __webpack_require__(201);
-	var thunk = __webpack_require__(206).default;
+	var reducers = __webpack_require__(200);
+	var actions = __webpack_require__(196);
+	var thunk = __webpack_require__(201).default;
 	
 	var store = (0, _redux.createStore)(reducers, (0, _redux.compose)((0, _redux.applyMiddleware)(thunk), window.devToolsExtension ? window.devToolsExtension() : function (f) {
 	  return f;
@@ -23948,206 +23518,31 @@
 	module.exports = store;
 
 /***/ },
-/* 205 */
+/* 200 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	var actions = __webpack_require__(201);
+	var actions = __webpack_require__(196);
 	
 	var reducers = function reducers(state, action) {
-	    state = state || {};
+	  state = state || {};
 	
-	    if (action.type === actions.PAGE_LOAD) {
-	        return Object.assign({}, {
-	            positions: null,
-	            dice: [1],
-	            turn: 'white',
-	            players: {
-	                white: 'PLAYER ONE',
-	                black: 'PLAYER TWO'
-	            },
-	            message: ': ROLL FOR FIRST TURN',
-	            inGame: false,
-	            highlight: null,
-	            rolling: true,
-	            validMoves: [],
-	            availableMoves: [],
-	            diceUsed: [],
-	            valid1: null,
-	            valid2: null,
-	            winner: null,
-	            lastRoll: null
-	        });
-	    } else if (action.type === actions.NEW_GAME_SUCCESS) {
-	        return Object.assign({}, state, {
-	            positions: action.positions
-	        });
-	    } else if (action.type === actions.NEW_GAME_ERROR) {
-	        console.error(action.error);
-	        return state;
-	    } else if (action.type === actions.ROLL_DICE) {
-	        var dice = ['./dice-roll-one.gif'];
-	        if (state.inGame) {
-	            dice = ['./dice-roll-one.gif', './dice-roll-two.gif'];
-	        }
-	        return Object.assign({}, state, {
-	            dice: dice
-	        });
-	    } else if (action.type === actions.MAKE_ROLL_SUCCESS) {
-	        var dice = action.roll;
-	        var turn = state.turn;
-	        var players = state.players;
-	        var lastRoll = state.lastRoll;
-	        var message = state.message;
-	        var inGame = state.inGame;
-	        var rolling = state.rolling;
-	        if (!state.inGame) {
-	            if (turn === 'white') {
-	                turn = 'black';
-	                lastRoll = action.roll;
-	            } else if (lastRoll[0] === dice[0]) {
-	                turn = 'white';
-	                lastRoll = action.roll;
-	            } else {
-	                dice = [lastRoll[0], dice[0]];
-	                inGame = true;
-	                message = '\'S MOVE';
-	                rolling = false;
-	                lastRoll = action.roll;
-	                if (dice[0] > dice[1]) {
-	                    turn = 'white';
-	                }
-	            }
-	        } else {
-	            message = '\'S MOVE';
-	            rolling = false;
-	            lastRoll = action.roll;
-	        }
-	        return Object.assign({}, state, {
-	            dice: dice,
-	            turn: turn,
-	            players: players,
-	            message: message,
-	            inGame: inGame,
-	            rolling: rolling,
-	            availableMoves: dice,
-	            lastRoll: lastRoll
-	        });
-	    } else if (action.type === actions.MAKE_ROLL_ERROR) {
-	        console.error(action.error);
-	        return state;
-	    } else if (action.type === actions.END_TURN) {
-	        var message = '\'S ROLL';
-	        var turn = 'white';
-	        if (state.turn === 'white') {
-	            turn = 'black';
-	        }
-	        return Object.assign({}, state, {
-	            message: message,
-	            turn: turn,
-	            rolling: true,
-	            diceUsed: [],
-	            highlight: null,
-	            valid1: null,
-	            valid2: null
-	
-	        });
-	    } else if (action.type === actions.SELECT) {
-	        var highlight = action.id;
-	        var valid1 = state.valid1;
-	        var valid2 = state.valid2;
-	        if (state.highlight === highlight) {
-	            highlight = null;
-	            valid1 = null;
-	            valid2 = null;
-	        }
-	        return Object.assign({}, state, {
-	            highlight: highlight,
-	            valid1: valid1,
-	            valid2: valid2
-	        });
-	    } else if (action.type === actions.UNHIGHLIGHT) {
-	        return Object.assign({}, state, {
-	            highlight: null,
-	            valid1: null,
-	            valid2: null
-	        });
-	    } else if (action.type === actions.END_GAME) {
-	        return Object.assign({}, state, {
-	            winner: action.winner,
-	            message: ' WINS!',
-	            inGame: false
-	        });
-	    } else if (action.type === actions.FIND_VALID_MOVES_SUCCESS) {
-	        var valid1 = null;
-	        var valid2 = null;
-	        if (action.validMoves.length === 1 || action.validMoves.length === 3 || action.validMoves.length === 4) {
-	            valid1 = action.validMoves[0].position;
-	        } else if (action.validMoves.length === 2) {
-	            valid1 = action.validMoves[0].position;
-	            valid2 = action.validMoves[1].position;
-	        }
-	        return Object.assign({}, state, {
-	            validMoves: action.validMoves,
-	            highlight: action.id,
-	            valid1: valid1,
-	            valid2: valid2
-	        });
-	    } else if (action.type === actions.FIND_VALID_MOVES_ERROR) {
-	        console.error(action.error);
-	        return state;
-	    } else if (action.type === actions.UPDATE_POSITIONS_SUCCESS) {
-	        var moves = state.availableMoves;
-	        var removeme = action.roll;
-	        var used = [];
-	        var message = state.message;
-	        var inGame = state.inGame;
-	        var winner = state.winner;
-	        var positions = action.positions;
-	        var moves = state.availableMoves.filter(function (val, index) {
-	            if (val === removeme) {
-	                if (state.diceUsed.length === 0) {
-	                    used.push(index);
-	                } else if (state.diceUsed.length === 1) {
-	                    used = [0, 1];
-	                } else if (state.diceUsed.length === 2) {
-	                    used = [0, 1, 2];
-	                } else {
-	                    used = [0, 1, 2, 3];
-	                }
-	                removeme = null;
-	                return false;
-	            }return true;
-	        });
-	        if (positions[1].white === 15 || positions[28].black === 15) {
-	            message = ' WINS!';
-	            winner = state.turn;
-	            inGame = false;
-	        }
-	        return Object.assign({}, state, {
-	            availableMoves: moves,
-	            positions: positions,
-	            highlight: null,
-	            valid1: null,
-	            valid2: null,
-	            diceUsed: used,
-	            inGame: inGame,
-	            message: message,
-	            winner: winner
-	        });
-	    } else if (action.type === actions.UPDATE_POSITIONS_MOVES_ERROR) {
-	        console.error(action.error);
-	        return state;
-	    } else {
-	        return state;
-	    }
+	  if (action.type === actions.NEW_GAME) {
+	    return Object.assign({}, {
+	      positions: {
+	        1: { white: null, black: null }, 2: { white: null, black: 2 }, 3: { white: null, black: null }, 4: { white: null, black: null }, 5: { white: null, black: null }, 6: { white: null, black: null }, 7: { white: 5, black: null }, 8: { white: null, black: null }, 9: { white: null, black: null }, 10: { white: 3, black: null }, 11: { white: null, black: null }, 12: { white: null, black: null }, 13: { white: null, black: null }, 14: { white: null, black: 5 }, 15: { white: 5, black: null }, 16: { white: null, black: null }, 17: { white: null, black: null }, 18: { white: null, black: null }, 19: { white: null, black: 3 }, 20: { white: null, black: null }, 21: { white: null, black: null }, 22: { white: null, black: 5 }, 23: { white: null, black: null }, 24: { white: null, black: null }, 25: { white: null, black: null }, 26: { white: null, black: null }, 27: { white: 2, black: null }, 28: { white: null, black: null }
+	      }
+	    });
+	  } else {
+	    return state;
+	  }
 	};
 	
 	module.exports = reducers;
 
 /***/ },
-/* 206 */
+/* 201 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -24175,234 +23570,7 @@
 	exports['default'] = thunk;
 
 /***/ },
-/* 207 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var React = __webpack_require__(1);
-	var TopDisplay = __webpack_require__(208);
-	var Board = __webpack_require__(210);
-	
-	var GameContainer = React.createClass({
-		displayName: 'GameContainer',
-	
-		render: function render() {
-			return React.createElement(
-				'div',
-				{ className: 'game-container' },
-				React.createElement(TopDisplay, null),
-				React.createElement(Board, null)
-			);
-		}
-	});
-	
-	module.exports = GameContainer;
-
-/***/ },
-/* 208 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var React = __webpack_require__(1);
-	var ReactDOM = __webpack_require__(34);
-	var connect = __webpack_require__(172).connect;
-	
-	var actions = __webpack_require__(201);
-	var Dice = __webpack_require__(209);
-	
-	var TopDisplay = React.createClass({
-		displayName: 'TopDisplay',
-	
-		rollDice: function rollDice() {
-			if (this.props.rolling) {
-				this.props.dispatch(actions.rollDice());
-				var props = this.props;
-				setTimeout(function () {
-					if (!props.inGame) {
-						props.dispatch(actions.makeRoll(1));
-					} else {
-						props.dispatch(actions.makeRoll(2));
-					}
-				}, 1000);
-			}
-		},
-		finishTurn: function finishTurn() {
-			if (this.props.inGame) {
-				this.props.dispatch(actions.endTurn());
-			}
-		},
-		restartGame: function restartGame() {
-			this.props.dispatch(actions.pageLoad());
-			this.props.dispatch(actions.newGame());
-		},
-		render: function render() {
-			var diceUsed = this.props.diceUsed;
-			var diceArr = this.props.dice.map(function (dice, index) {
-				if (diceUsed.length === 1 && index === diceUsed[0] || diceUsed.length > 1 && index < diceUsed.length) {
-					return React.createElement(
-						'li',
-						{ key: index },
-						React.createElement(Dice, { image: dice + 10 })
-					);
-				} else {
-					return React.createElement(
-						'li',
-						{ key: index },
-						React.createElement(Dice, { image: dice })
-					);
-				}
-			});
-			var buttons = 'buttons hidden';
-			var status = 'status pad';
-			var white = 'white';
-			var black = 'black turn';
-			if (this.props.inGame || this.props.winner) {
-				status = 'status';
-				buttons = 'buttons';
-			}
-			if (this.props.turn === 'white') {
-				white = 'white turn';
-				black = 'black';
-			}
-			var endArr = [React.createElement(
-				'button',
-				{ key: '1', className: 'end' },
-				'End Turn'
-			)];
-			if (!this.props.rolling && this.props.inGame) {
-				if (this.props.availableMoves.length === 0 || this.props.highlight && this.props.validMoves.length === 0) {
-					endArr = [React.createElement(
-						'button',
-						{ key: '1', className: 'end green', onClick: this.finishTurn },
-						'End Turn'
-					)];
-				}
-			}
-			var restartArr = [React.createElement(
-				'button',
-				{ key: '3', className: 'restart', onClick: this.restartGame },
-				'Restart Game'
-			)];
-			if (this.props.winner) {
-				restartArr = [React.createElement(
-					'button',
-					{ key: '3', className: 'restart green', onClick: this.restartGame },
-					'Restart Game'
-				)];
-			}
-			return React.createElement(
-				'div',
-				{ className: 'top-display' },
-				React.createElement(
-					'div',
-					{ className: 'player-one col' },
-					React.createElement(
-						'h2',
-						{ className: white },
-						this.props.players.white,
-						'  ',
-						React.createElement('img', { src: './white-piece.png', className: 'icon' })
-					)
-				),
-				React.createElement(
-					'div',
-					{ className: 'mid col' },
-					React.createElement(
-						'h3',
-						{ className: status },
-						this.props.curPlayer,
-						this.props.message
-					),
-					React.createElement(
-						'ul',
-						{ className: buttons },
-						React.createElement(
-							'li',
-							null,
-							endArr
-						),
-						React.createElement(
-							'li',
-							null,
-							React.createElement(
-								'button',
-								{ className: 'undo' },
-								'Undo Move'
-							)
-						),
-						React.createElement(
-							'li',
-							null,
-							restartArr
-						)
-					),
-					React.createElement(
-						'ul',
-						{ className: 'dice', onClick: this.rollDice },
-						diceArr
-					)
-				),
-				React.createElement(
-					'div',
-					{ className: 'player-two col' },
-					React.createElement(
-						'h2',
-						{ className: black },
-						this.props.players.black,
-						'  ',
-						React.createElement('img', { src: './black-piece.png', className: 'icon' })
-					)
-				)
-			);
-		}
-	});
-	
-	var mapStateToProps = function mapStateToProps(state, props) {
-		return {
-			state: state,
-			curPlayer: state.players[state.turn],
-			turn: state.turn,
-			inGame: state.inGame,
-			players: state.players,
-			message: state.message,
-			dice: state.dice,
-			rolling: state.rolling,
-			availableMoves: state.availableMoves,
-			validMoves: state.validMoves,
-			diceUsed: state.diceUsed,
-			highlight: state.highlight,
-			winner: state.winner
-		};
-	};
-	
-	module.exports = connect(mapStateToProps)(TopDisplay);
-
-/***/ },
-/* 209 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var React = __webpack_require__(1);
-	
-	var Dice = React.createClass({
-		displayName: 'Dice',
-	
-		render: function render() {
-			if (this.props.image === './dice-roll-one.gif' || this.props.image === './dice-roll-two.gif') {
-				return React.createElement('img', { src: this.props.image });
-			}
-			var image = './dice-' + this.props.image + '.png';
-			return React.createElement('img', { src: image });
-		}
-	});
-	
-	module.exports = Dice;
-
-/***/ },
-/* 210 */
+/* 202 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -24410,109 +23578,71 @@
 	var React = __webpack_require__(1);
 	var connect = __webpack_require__(172).connect;
 	
-	var actions = __webpack_require__(201);
-	var Space = __webpack_require__(211);
-	var Bar = __webpack_require__(213);
-	var Home = __webpack_require__(214);
-	var Piece = __webpack_require__(212);
+	var actions = __webpack_require__(196);
+	var Space = __webpack_require__(203);
+	var Bar = __webpack_require__(205);
+	var Home = __webpack_require__(206);
+	var Piece = __webpack_require__(204);
 	
 	var Board = React.createClass({
 		displayName: 'Board',
 	
-		selectSpace: function selectSpace(id) {
-			var props = this.props;
-			return function () {
-				if (!props.rolling && props.availableMoves.length > 0 && props.inGame) {
-					if (props.highlight === id) {
-						return props.dispatch(actions.unhighlight());
-					} else if (props.highlight && props.validMoves.length > 0) {
-						for (var i = 0; i < props.validMoves.length; i++) {
-							if (props.validMoves[i].position === id) {
-								id = null;
-								return props.dispatch(actions.updatePositions(props.validMoves[i].position, props.highlight, props.validMoves[i].roll));
-								break;
-							} else if (i === props.validMoves.length - 1) {
-								return props.dispatch(actions.unhighlight());
-							}
-						}
-					} else if (props.positions[id][props.turn] > 0 && !props.positions[21][props.turn] || id === 21 && props.positions[id][props.turn]) {
-						var moves = props.availableMoves.join('_');
-						return props.dispatch(actions.findValidMoves(props.turn, id, moves));
-					} else if (props.highlight && props.validMoves.length === 0) {
-						return props.dispatch(actions.unhighlight());
-					}
-				} else if (props.highlight) {
-					return props.dispatch(actions.unhighlight());
-				}
-			};
-		},
+	
 		render: function render() {
-			console.log(this.props.state);
+			console.log(this.props.positions, 'positions');
 			var topBoard = [];
 			var bottomBoard = [];
-			if (this.props.positions) {
-				for (var i = 1; i < 29; i++) {
-					var homeClasses = 'home ';
-					var barClasses = 'bar ';
-					var spaceClasses = 'space ';
-					var pieces = [];
-					if (i === this.props.highlight) {
-						homeClasses += 'highlight';
-						barClasses += 'highlight';
-						spaceClasses += 'highlight';
-					}
-					if (i === this.props.valid1 || i === this.props.valid2) {
-						homeClasses += 'valid';
-						spaceClasses += 'valid';
-					}
-					if (this.props.positions[i].white) {
-						for (var j = 1; j <= this.props.positions[i].white; j++) {
-							pieces.push(React.createElement(Piece, { color: 'white' }));
-						}
-					}
-					if (this.props.positions[i].black) {
-						for (var j = 1; j <= this.props.positions[i].black; j++) {
-							pieces.push(React.createElement(Piece, { color: 'black' }));
-						}
-					}
-					if (i === 1 || i === 28) {
-						var container = React.createElement(
-							'li',
-							{ className: homeClasses, key: i, onClick: this.selectSpace(i) },
-							React.createElement(Home, { pieces: pieces })
-						);
-					} else if (i === 8 || i === 21) {
-						var container = React.createElement(
-							'li',
-							{ className: barClasses, key: i, onClick: this.selectSpace(i) },
-							React.createElement(Bar, { pieces: pieces })
-						);
-					} else {
-						var container = React.createElement(
-							'li',
-							{ className: spaceClasses, key: i, onClick: this.selectSpace(i) },
-							React.createElement(Space, { pieces: pieces })
-						);
-					}
-					if (i < 15) {
-						topBoard.unshift(container);
-					} else {
-						bottomBoard.push(container);
+			for (var i = 1; i < 29; i++) {
+				var pieces = [];
+				if (this.props.positions[i].white) {
+					for (var i = 1; i <= this.props.positions[i].white; i++) {
+						pieces.push(React.createElement(Piece, { color: 'white' }));
 					}
 				}
+				if (this.props.positions[i].black) {
+					for (var i = 1; i <= this.props.positions[i].black; i++) {
+						pieces.push(React.createElement(Piece, { color: 'black' }));
+					}
+				}
+				if (i === 1 || i === 28) {
+					var container = React.createElement(Home, { pieces: pieces });
+				} else if (i === 8 || i === 21) {
+					var container = React.createElement(Bar, { pieces: pieces });
+				} else {
+					var container = React.createElement(Space, { pieces: pieces });
+				}
+				if (i < 15) {
+					topBoard.unshift(container);
+				} else {
+					bottomBoard.push(container);
+				}
 			}
+			topArr = topBoard.map(function (space, index) {
+				return React.createElement(
+					'li',
+					{ key: index },
+					space
+				);
+			});
+			bottomArr = topBoard.map(function (space, index) {
+				return React.createElement(
+					'li',
+					{ key: index },
+					space
+				);
+			});
 			return React.createElement(
 				'div',
 				{ className: 'board' },
 				React.createElement(
 					'ul',
 					{ className: 'board-top' },
-					topBoard
+					topArr
 				),
 				React.createElement(
 					'ul',
 					{ className: 'board-bottom' },
-					bottomBoard
+					bottomArr
 				)
 			);
 		}
@@ -24520,30 +23650,20 @@
 	
 	var mapStateToProps = function mapStateToProps(state, props) {
 		return {
-			positions: state.positions,
-			highlight: state.highlight,
-			rolling: state.rolling,
-			turn: state.turn,
-			validMoves: state.validMoves,
-			availableMoves: state.availableMoves,
-			valid1: state.valid1,
-			valid2: state.valid2,
-			state: state,
-			inGame: state.inGame
-	
+			positions: state.positions
 		};
 	};
 	
 	module.exports = connect(mapStateToProps)(Board);
 
 /***/ },
-/* 211 */
+/* 203 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var React = __webpack_require__(1);
-	var Piece = __webpack_require__(212);
+	var Piece = __webpack_require__(204);
 	
 	var Space = React.createClass({
 	  displayName: 'Space',
@@ -24558,7 +23678,7 @@
 	    });
 	    return React.createElement(
 	      'ul',
-	      null,
+	      { className: 'space' },
 	      piecesArr
 	    );
 	  }
@@ -24567,7 +23687,7 @@
 	module.exports = Space;
 
 /***/ },
-/* 212 */
+/* 204 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -24592,13 +23712,13 @@
 	module.exports = Piece;
 
 /***/ },
-/* 213 */
+/* 205 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var React = __webpack_require__(1);
-	var Piece = __webpack_require__(212);
+	var Piece = __webpack_require__(204);
 	
 	var Bar = React.createClass({
 		displayName: 'Bar',
@@ -24613,7 +23733,7 @@
 			});
 			return React.createElement(
 				'ul',
-				null,
+				{ className: 'bar' },
 				piecesArr
 			);
 		}
@@ -24622,13 +23742,13 @@
 	module.exports = Bar;
 
 /***/ },
-/* 214 */
+/* 206 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var React = __webpack_require__(1);
-	var Piece = __webpack_require__(212);
+	var Piece = __webpack_require__(204);
 	
 	var Home = React.createClass({
 		displayName: 'Home',
@@ -24643,7 +23763,7 @@
 			});
 			return React.createElement(
 				'ul',
-				null,
+				{ className: 'home' },
 				this.props.pieces
 			);
 		}

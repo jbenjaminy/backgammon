@@ -1,221 +1,66 @@
-@import url(https://fonts.googleapis.com/css?family=Baloo+Paaji);
 @board: #8C6D57;
-@dkboard: darken(@board, 20%);
-@ltboard: #baa18f;
-@highlight: #A35F6F;
-@background: #D1D1D1;
-@button: darken(@background, 20%);
-@text: #1F120B;
-@valid: #74806D;
+@dkboard: darken(@board, 5%);
 
-html {
-	height: 820px;
+body {
+	margin-right: 0;
+	margin-left: 0;
+	margin-top: 0;
+	height: 100%;
 
-	body {
-		margin-right: 0;
-		margin-left: 0;
-		margin-top: 0;
+	#app {
 		height: 100%;
-		font-family: 'Baloo Paaji';
-		color: @text;
 
-		#app {
-			height: 100%;
-			background-color: @background;
+		.board {
+			background-color: @board;
+			border: 1px solid @dkboard;
+			height: 900px;
 
-			.game-container {
-				.top-display {
-					.hidden {
-						display: none;
-					}
-					.col {
-						display: inline-block;
-						width: 33%;
-					}
-					.player-one {
-						text-align: right;
-					}
-					.player-two {
-						text-align: left;
-					}
-					.white, .black {
-						font-size: 1.5em;
-					}
-					.turn {
-						font-size: 1.6em;
-						font-style: italic;
-					}
-					.icon {
-							margin-bottom: -10px;
-						}
-					.mid {
-						padding-left: 0.5%;
-						padding-right: 0.5%;
-						text-align: center;
+			.board-bottom, .board-top {
+				height: 50%;
+				display: inline-block;
+				
+				li {
+					z-index: 1;
+					display: inline-block;
+					list-style-type: none;
 
-						ul {
-							padding-left: 0;
+					ul {
+						display: block;
 
-							li {
-								display: inline-block;
-								list-style-type: none;
-							}
-						}
-
-						.status {
-							margin-bottom: 6px;
-						}
-
-						.pad {
-							margin-bottom: 50.7334px;
-						}
-
-						.buttons {
-							margin-top: 6px;
-							button {
-								color: @text;
-								font-family: 'Baloo Paaji';
-								border: solid 1px @button;
-								padding: 2px;
-								border-radius: 5px;
-								background-color: @button;
-							}
-
-							.undo {
-								margin-left: 10px;
-								margin-right: 10px;
-							}
-
-							.end.green {
-								background-color: @valid;
-								border: solid 1px @valid;
-							}
-							
-							.restart.green {
-								background-color: @valid;
-								border: solid 1px @valid;
-							}
-						}
-						.dice {
+						li {
+							display: block;
+							list-style-type: none;
 						}
 					}
 				}
 
-				.board {
-					background-color: @board;
-					border: 5px solid @dkboard;
-					height: 434px;
-					width: 928px;
-					margin: 0 auto;
-					margin-top: 1%;
+				.bar {
+					height: 100%;
+					width: 150px;
+					border-left: 1px solid @dkboard;
+					border-right: 1px solid @dkboard;
+				}
 
-					.board-bottom, .board-top {
-						width: 100%;
-						height: 50%;
-						padding-left: 0;
-						margin-top: -1.5px;
-						margin-bottom: 0;
-						
-						li {
-							z-index: 1;
-							display: inline-block;
-							list-style-type: none;
+				.home {
+					height: 100%;
+					width: 200px;
+					border: 2px solid @dkboard;
+				}
 
-							ul {
-								padding-left: 0;
+				.board-top {
 
-								li {
-									z-index: 2;
-									display: block;
-									list-style-type: none;
-									height: 38px;
-
-									img {
-										margin-left: 11px;
-									}
-								}
-							}
-						}
-						
-						.highlight {
-							background-color: @highlight;
-						}
-						.valid {
-							background-color: @valid;
-						}
-
-						.bar {
-							height: 217px;
-							width: 80px;
-							border-left: 2px solid @dkboard;
-							border-right: 2px solid @dkboard;
-						}
-
-						.home {
-							height: 217px;
-							width: 120px;
-							border: 2px solid @dkboard;
-						}
-						.space {
-							height: 192px;
-							width: 60px;
-							background-position: top fixed;
-							background-repeat: no-repeat;
-							background-size: auto auto;
-						}
+					.space {
+						background-image: url(top-space.png);
 					}
+				}
 
-					.board-top {
-						li {
-							vertical-align: top;
-						}
-
-						.bar {
-							border-top: 2px solid @dkboard;
-						}
-
-						.space {
-							background-image: url(top-space.png);
-							margin-bottom: 26px;
-						}
-						.space.highlight {
-							background-image: url(top-space-highlight.png);
-							margin-bottom: 26px;
-						}
-						.space.valid {
-							background-image: url(top-space-valid.png);
-							margin-bottom: 26px;
-						}
-					}
-
-					.board-bottom {
-						li {
-							vertical-align: bottom;
-							ul {
-								height: 100%;
-								-webkit-transform:rotate(180deg);-moz-transform:rotate(180deg);-o-transform:rotate(180deg);writing-mode:lr-tb;
-
-								li {
-								}
-							}
-						}
-
-						.bar {
-							border-bottom: 2px solid @dkboard;
-						}
-						
-						.space {
-							background-image: url(bottom-space.png);
-						}
-						.space.highlight {
-							background-image: url(bottom-space-highlight.png);
-						}
-						.space.valid {
-							background-image: url(bottom-space-valid.png);
-						}
+				.board-bottom {
+					
+					.space {
+						background-image: url(bottom-space.png);
 					}
 				}
 			}
-		}	
-	}
+		}
+	}	
 }

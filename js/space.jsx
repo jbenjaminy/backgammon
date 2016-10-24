@@ -6,7 +6,7 @@ var Space = React.createClass({
   		var piecesArr = this.props.pieces.map(function(piece, index) {
 			return <li key={index}>{piece}</li>;
 		});
-    	return <ul>{piecesArr}</ul>;
+    	return <ul className='space'>{piecesArr}</ul>;
   	}
 });
 
